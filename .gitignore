@@ -1,0 +1,7 @@
+/target
+**/*.rs.bk
+
+/.idea
+
+output.txt
+data.txt
