@@ -5,14 +5,18 @@ use std::env;
 pub struct Config {
     pub query: String,
     pub filename: String,
-    pub case_sensitive: bool
+    pub case_sensitive: bool,
+    pub print_line_number: bool,
+    pub return_one_line: bool
 }
 
 impl Config {
     pub fn new(mut args: std::env::Args) -> Result<Config, &'static str> {
 
         // if "CASE_INSENSITIVE" env var is set to anything return false
-        let mut case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+        // Disabled for now, need to figure out how to combine this with
+        // checking for manual cl args below
+        // let mut case_sensitive = env::var("CASE_INSENSITIVE").is_err();
 
         args.next(); // skip first arg (unneeded program name)
 
@@ -26,16 +30,31 @@ impl Config {
             None => return Err("You must provide at least two arguments!")
         };
 
-        // This takes an optional third command line arg which will set the search
-        // to case insensitive, should probably extract remaining args into an array
-        // here to provide list of user options to apply to the search
-        let case_sensitive_arg = match args.next() {
-            Some(value) => case_sensitive = false,
-            None => ()
+        let (
+            mut case_sensitive,
+            mut print_line_number,
+            mut return_one_line) = (
+            false, false, false
+        );
+
+        // Go through args to set config options
+        while let Some(arg) = args.next() {
+            println!("{}", &arg);
+            match &arg[..] {
+                "-c" => case_sensitive = true,
+                "-p" => print_line_number = true,
+                "-r" => return_one_line = true,
+                _ => println!("NO ARGS!")
+            }
         };
 
-
-        Ok(Config { query, filename, case_sensitive })
+        Ok(Config {
+            query,
+            filename,
+            case_sensitive,
+            print_line_number,
+            return_one_line
+        })
     }
 }
 
@@ -44,13 +63,15 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     match config.case_sensitive {
         true => {
-            for line in search(&config.query, &contents) {
-                println!("{}\n\r", line);
+            for (index, line) in search(&config.query, &contents) {
+                print_results(index, line, config.print_line_number);
+                //println!("{} {}", index, line);
             }
         },
         false => {
-            for line in search_case_insensitive(&config.query, &contents) {
-                println!("{}\n\r", line);
+            for (index, line) in search_case_insensitive(&config.query, &contents) {
+                print_results(index, line, config.print_line_number);
+                //println!("{} {}", index, line);
             }
         }
     }
@@ -58,9 +79,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    contents.lines()
-        .filter(|line| { line.contains(query) })
+fn search<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
+    contents.lines().enumerate()
+        .filter(|(index, line)| {
+            line.contains(query)
+        })
         .collect()
 }
 /*
@@ -77,18 +100,24 @@ fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
 }
 */
 
-fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     let query = query.to_lowercase();
 
-    contents.lines()
-        .filter(|line| {
+    contents.lines().enumerate()
+        .filter(|(index, line)| {
             line.to_lowercase().contains(&query)
         })
         .collect()
 }
 
+fn print_results(index: usize, line: &str, print_line_number: bool) {
+    match print_line_number {
+        true => println!("{} {}", index, line),
+        false => println!("{}", line)
+    }
+}
 
-
+// TODO update tests 
 #[cfg(test)]
 mod tests {
     use super::*;
