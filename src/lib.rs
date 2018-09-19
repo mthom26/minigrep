@@ -63,15 +63,19 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     match config.case_sensitive {
         true => {
-            for (index, line) in search(&config.query, &contents) {
+            let vec = search(&config.query, &contents);
+            println!("Found {} results for \"{}\"", vec.len(), &config.query);
+
+            for(index, line) in vec {
                 print_results(index, line, config.print_line_number);
-                //println!("{} {}", index, line);
             }
         },
         false => {
-            for (index, line) in search_case_insensitive(&config.query, &contents) {
+            let vec = search_case_insensitive(&config.query, &contents);
+            println!("Found {} results for \"{}\"", vec.len(), &config.query);
+
+            for(index, line) in vec {
                 print_results(index, line, config.print_line_number);
-                //println!("{} {}", index, line);
             }
         }
     }
@@ -117,7 +121,7 @@ fn print_results(index: usize, line: &str, print_line_number: bool) {
     }
 }
 
-// TODO update tests 
+// TODO update tests
 #[cfg(test)]
 mod tests {
     use super::*;

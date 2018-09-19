@@ -33,7 +33,7 @@ fn main() {
     });
     */
 
-    println!("Searching for '{}' in {}\n\r\n\r", config.query, config.filename);
+    println!("Searching for '{}' in {}\n\r", config.query, config.filename);
 
     if let Err(e) = minigrep::run(config) {
         eprintln!("Application error: {}", e);
