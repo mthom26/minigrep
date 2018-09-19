@@ -61,57 +61,35 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.filename)?;
 
-    match config.case_sensitive {
-        true => {
-            let vec = search(&config.query, &contents);
-            println!("Found {} results for \"{}\"", vec.len(), &config.query);
+    let vec = search(&config.query, &contents, config.case_sensitive);
+    println!("Found {} results for \"{}\"", vec.len(), &config.query);
 
-            for(index, line) in vec {
-                print_results(index, line, config.print_line_number);
-            }
-        },
-        false => {
-            let vec = search_case_insensitive(&config.query, &contents);
-            println!("Found {} results for \"{}\"", vec.len(), &config.query);
-
-            for(index, line) in vec {
-                print_results(index, line, config.print_line_number);
-            }
-        }
+    for(index, line) in vec {
+        print_results(index, line, config.print_line_number);
     }
 
     Ok(())
 }
 
-fn search<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
-    contents.lines().enumerate()
-        .filter(|(index, line)| {
-            line.contains(query)
-        })
-        .collect()
-}
-/*
-fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
+fn search<'a>(query: &str, contents: &'a str, case_sensitive: bool) -> Vec<(usize, &'a str)> {
+    match case_sensitive {
+        true => {
+            contents.lines().enumerate()
+                .filter(|(index, line)| {
+                    line.contains(query)
+                })
+                .collect()
+        },
+        false => {
+            let query = query.to_lowercase();
 
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
+            contents.lines().enumerate()
+                .filter(|(index, line)| {
+                    line.to_lowercase().contains(&query)
+                })
+                .collect()
         }
     }
-
-    results
-}
-*/
-
-fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
-    let query = query.to_lowercase();
-
-    contents.lines().enumerate()
-        .filter(|(index, line)| {
-            line.to_lowercase().contains(&query)
-        })
-        .collect()
 }
 
 fn print_results(index: usize, line: &str, print_line_number: bool) {
@@ -141,24 +119,6 @@ Duct Tape.";
         assert_eq!(
             vec!["safe, fast, productive."],
             search(query, contents)
-        )
-    }
-
-    #[test]
-    fn case_insensitive() {
-        let query = "rUsT";
-        //let contents = "\nRust:\nsafe, fast, productive.\nPick three.";
-
-        // multiline literal string
-        let contents = "\
-Rust:
-safe, fast, productive.
-Pick three.
-Trust Me.";
-
-        assert_eq!(
-            vec!["Rust:", "Trust Me."],
-            search_case_insensitive(query, contents)
         )
     }
 }
